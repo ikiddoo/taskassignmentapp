@@ -1,34 +1,30 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, HttpStatus } from '@nestjs/common';
 import { SkillsService } from './skills.service';
-import { CreateSkillDto } from './dto/create-skill.dto';
-import { UpdateSkillDto } from './dto/update-skill.dto';
+import { Skill } from './entities/skill.entity';
 
 @Controller('skills')
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
-  @Post()
-  create(@Body() createSkillDto: CreateSkillDto) {
-    return this.skillsService.create(createSkillDto);
-  }
-
+  /**
+   * Retrieves all skills with their associated developers and tasks
+   * @returns Promise<Skill[]>
+   */
   @Get()
-  findAll() {
+  async findAll(): Promise<Skill[]> {
     return this.skillsService.findAll();
   }
 
+  /**
+   * Retrieves a specific skill by ID with all related information
+   * @param id - Skill ID
+   * @returns Promise<Skill>
+   */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.skillsService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateSkillDto: UpdateSkillDto) {
-    return this.skillsService.update(+id, updateSkillDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.skillsService.remove(+id);
+  async findOne(
+    @Param('id', new ParseIntPipe({ errorHttpStatusCode: HttpStatus.BAD_REQUEST }))
+    id: number,
+  ): Promise<Skill> {
+    return this.skillsService.findOne(id);
   }
 }

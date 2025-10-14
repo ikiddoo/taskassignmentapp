@@ -1,26 +1,44 @@
-import { Injectable } from '@nestjs/common';
-import { CreateSkillDto } from './dto/create-skill.dto';
-import { UpdateSkillDto } from './dto/update-skill.dto';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/core';
+import { Skill } from './entities/skill.entity';
 
 @Injectable()
 export class SkillsService {
-  create(createSkillDto: CreateSkillDto) {
-    return 'This action adds a new skill';
+  constructor(
+    @InjectRepository(Skill)
+    private readonly skillRepository: EntityRepository<Skill>,
+  ) {}
+
+  /**
+   * Retrieves all skills with their associated developers and tasks
+   * @returns Promise<Skill[]> Array of all skills with populated relationships
+   */
+  async findAll(): Promise<Skill[]> {
+    return this.skillRepository.findAll({
+      populate: ['developers', 'tasks'],
+      orderBy: { name: 'ASC' },
+    });
   }
 
-  findAll() {
-    return `This action returns all skills`;
-  }
+  /**
+   * Retrieves a single skill by ID with all related data
+   * @param id - The skill's ID
+   * @returns Promise<Skill> The skill with populated relationships
+   * @throws NotFoundException if skill is not found
+   */
+  async findOne(id: number): Promise<Skill> {
+    const skill = await this.skillRepository.findOne(
+      { id },
+      {
+        populate: ['developers', 'tasks'],
+      },
+    );
 
-  findOne(id: number) {
-    return `This action returns a #${id} skill`;
-  }
+    if (!skill) {
+      throw new NotFoundException(`Skill with ID ${id} not found`);
+    }
 
-  update(id: number, updateSkillDto: UpdateSkillDto) {
-    return `This action updates a #${id} skill`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} skill`;
+    return skill;
   }
 }
