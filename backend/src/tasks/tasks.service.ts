@@ -6,6 +6,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus } from './entities/task.entity';
 import { DevelopersService } from '../developers/developers.service';
 import { SkillsService } from '../skills/skills.service';
+import { LlmService } from '../llm/llm.service';
 
 @Injectable()
 export class TasksService {
@@ -15,6 +16,7 @@ export class TasksService {
     private readonly em: EntityManager,
     private readonly developersService: DevelopersService,
     private readonly skillsService: SkillsService,
+    private readonly llmService: LlmService,
   ) {}
 
   /**
@@ -36,8 +38,15 @@ export class TasksService {
     taskDto: CreateTaskDto | CreateSubtaskDto,
     parentTask: Task | null,
   ): Promise<Task> {
+    let skillIds = taskDto.requiredSkillIds;
+
+    // If no skills provided, use LLM to identify them
+    if (!skillIds || skillIds.length === 0) {
+      skillIds = await this.identifySkillsUsingLLM(taskDto.title);
+    }
+
     const skills = await Promise.all(
-      taskDto.requiredSkillIds.map((id) => this.skillsService.findOne(id)),
+      skillIds.map((id) => this.skillsService.findOne(id)),
     );
 
     const task = this.taskRepository.create({
@@ -55,7 +64,7 @@ export class TasksService {
         taskDto.assignedDeveloperId,
       );
       
-      await this.validateDeveloperSkills(developer.id, taskDto.requiredSkillIds);
+      await this.validateDeveloperSkills(developer.id, skillIds);
       task.assignedDeveloper = developer;
     }
 
@@ -68,6 +77,40 @@ export class TasksService {
     }
 
     return task;
+  }
+
+  /**
+   * Use LLM to identify required skills based on task title
+   */
+  private async identifySkillsUsingLLM(taskTitle: string): Promise<number[]> {
+    try {
+      // Get all available skills from database
+      const allSkills = await this.skillsService.findAll();
+      const availableSkillNames = allSkills.map(skill => skill.name);
+
+      // Ask LLM to identify required skills
+      const identifiedSkillNames = await this.llmService.identifySkills(
+        taskTitle,
+        availableSkillNames
+      );
+
+      // Convert skill names to IDs
+      const skillIds: number[] = [];
+      for (const skillName of identifiedSkillNames) {
+        const skill = allSkills.find(
+          s => s.name.toLowerCase() === skillName.toLowerCase()
+        );
+        if (skill) {
+          skillIds.push(skill.id);
+        }
+      }
+
+      return skillIds;
+    } catch (error) {
+      // If LLM fails, return empty array (task will have no skills)
+      console.error('Failed to identify skills using LLM:', error);
+      return [];
+    }
   }
 
   /**

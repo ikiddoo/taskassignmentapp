@@ -17,8 +17,8 @@ export class CreateSubtaskDto {
 
   @IsArray()
   @IsInt({ each: true })
-  @ArrayMinSize(1)
-  requiredSkillIds!: number[];
+  @IsOptional()  // Made optional - LLM will identify if not provided
+  requiredSkillIds?: number[];
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -42,8 +42,8 @@ export class CreateTaskDto {
 
   @IsArray()
   @IsInt({ each: true })
-  @ArrayMinSize(1)
-  requiredSkillIds!: number[];
+  @IsOptional()  // Made optional - LLM will identify if not provided
+  requiredSkillIds?: number[];
 
   @IsArray()
   @ValidateNested({ each: true })
