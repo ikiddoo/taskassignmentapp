@@ -1,34 +1,30 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe, HttpStatus } from '@nestjs/common';
 import { DevelopersService } from './developers.service';
-import { CreateDeveloperDto } from './dto/create-developer.dto';
-import { UpdateDeveloperDto } from './dto/update-developer.dto';
+import { Developer } from './entities/developer.entity';
 
 @Controller('developers')
 export class DevelopersController {
   constructor(private readonly developersService: DevelopersService) {}
 
-  @Post()
-  create(@Body() createDeveloperDto: CreateDeveloperDto) {
-    return this.developersService.create(createDeveloperDto);
-  }
-
+  /**
+   * Retrieves all developers with their skills and assigned tasks
+   * @returns Promise<Developer[]>
+   */
   @Get()
-  findAll() {
+  async findAll(): Promise<Developer[]> {
     return this.developersService.findAll();
   }
 
+  /**
+   * Retrieves a specific developer by ID with all related information
+   * @param id - Developer ID
+   * @returns Promise<Developer>
+   */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.developersService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDeveloperDto: UpdateDeveloperDto) {
-    return this.developersService.update(+id, updateDeveloperDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.developersService.remove(+id);
+  async findOne(
+    @Param('id', new ParseIntPipe({ errorHttpStatusCode: HttpStatus.BAD_REQUEST }))
+    id: number,
+  ): Promise<Developer> {
+    return this.developersService.findOne(id);
   }
 }
