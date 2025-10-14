@@ -1,34 +1,45 @@
+import axios from 'axios';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const api = {
   async getTasks() {
-    const response = await fetch(`${API_BASE_URL}/tasks`);
-    if (!response.ok) throw new Error('Failed to fetch tasks');
-    return response.json();
+    const response = await axiosInstance.get('/tasks');
+    return response.data;
+  },
+
+  async createTask(data: { title: string; requiredSkillIds: number[] }) {
+    try {
+      const response = await axiosInstance.post('/tasks', data);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to create task');
+    }
   },
 
   async updateTask(id: number, data: any) {
-    const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const error = await response.json();
-      throw error;
+    try {
+      const response = await axiosInstance.patch(`/tasks/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || error;
     }
-    return response.json();
   },
 
   async getDevelopers() {
-    const response = await fetch(`${API_BASE_URL}/developers`);
-    if (!response.ok) throw new Error('Failed to fetch developers');
-    return response.json();
+    const response = await axiosInstance.get('/developers');
+    return response.data;
   },
 
   async getSkills() {
-    const response = await fetch(`${API_BASE_URL}/skills`);
-    if (!response.ok) throw new Error('Failed to fetch skills');
-    return response.json();
+    const response = await axiosInstance.get('/skills');
+    return response.data;
   },
 };

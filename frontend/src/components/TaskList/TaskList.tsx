@@ -3,7 +3,11 @@ import type { Task, Developer } from '../../types';
 import { api } from '../../services/api';
 import './TaskList.css';
 
-const TaskList: React.FC = () => {
+interface TaskListProps {
+  onCreateTask?: () => void;
+}
+
+const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [developers, setDevelopers] = useState<Developer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,10 +100,19 @@ const TaskList: React.FC = () => {
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Tasks</h2>
-        <button className="btn btn-primary" onClick={loadData}>
-          <i className="bi bi-arrow-clockwise me-2"></i>
-          Refresh
-        </button>
+        <div className="d-flex gap-2">
+          <button 
+            className="btn btn-success" 
+            onClick={onCreateTask}
+          >
+            <i className="bi bi-plus-circle me-2"></i>
+            Create Task
+          </button>
+          <button className="btn btn-primary" onClick={loadData}>
+            <i className="bi bi-arrow-clockwise me-2"></i>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error && (
