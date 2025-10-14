@@ -1,7 +1,12 @@
 import axios from 'axios';
 import type { CreateTaskInput } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Use /api for Docker deployment (nginx proxy), fallback to localhost for local development
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  window.location.hostname === 'localhost' && window.location.port !== '80' 
+    ? 'http://localhost:3000' 
+    : '/api'
+);
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
