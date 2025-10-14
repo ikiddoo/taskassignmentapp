@@ -1,23 +1,17 @@
-import { useState } from 'react'
 import './App.css'
+import TaskList from './components/TaskList/TaskList'
 
 function App() {
-  const [count, setCount] = useState(0)
   return (
-    <>
-      <h1>Vite + React</h1>
+    <div className="App">
+      <nav className="navbar navbar-dark bg-dark mb-4">
+        <div className="container-fluid">
+          <span className="navbar-brand mb-0 h1">Task Assignment App</span>
+        </div>
+      </nav>
       
-      <div className="mt-4">
-        <h2>Count: {count}</h2>
-        <button 
-          className="btn btn-primary" 
-          onClick={() => setCount(count + 1)}
-        >
-          Increment
-        </button>
-      </div>
-  
-    </>
+      <TaskList />
+    </div>
   )
 }
 
