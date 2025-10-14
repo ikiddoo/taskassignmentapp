@@ -19,6 +19,24 @@ export interface Task {
   updatedAt: string;
   requiredSkills: Skill[];
   assignedDeveloper: Developer | null;
+  parentTask?: Task | null;
+  subtasks?: Task[];
+}
+
+export interface SubtaskInput {
+  title: string;
+  requiredSkillIds: number[];
+  status?: 'To-do' | 'In Progress' | 'Done';
+  assignedDeveloperId?: number;
+  subtasks?: SubtaskInput[];
+}
+
+export interface CreateTaskInput {
+  title: string;
+  requiredSkillIds: number[];
+  status?: 'To-do' | 'In Progress' | 'Done';
+  assignedDeveloperId?: number;
+  subtasks?: SubtaskInput[];
 }
 
 export interface ApiError {

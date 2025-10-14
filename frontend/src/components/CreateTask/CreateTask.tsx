@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import type { Skill } from '../../types';
+import type { Skill, SubtaskInput, CreateTaskInput } from '../../types';
 import { api } from '../../services/api';
+import SubtaskForm from '../SubtaskForm/SubtaskForm';
 import './CreateTask.css';
 
 interface CreateTaskProps {
@@ -11,6 +12,7 @@ interface CreateTaskProps {
 const CreateTask: React.FC<CreateTaskProps> = ({ onTaskCreated, onCancel }) => {
   const [title, setTitle] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<number[]>([]);
+  const [subtasks, setSubtasks] = useState<SubtaskInput[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -42,6 +44,41 @@ const CreateTask: React.FC<CreateTaskProps> = ({ onTaskCreated, onCancel }) => {
     );
   };
 
+  const handleAddSubtask = () => {
+    const newSubtask: SubtaskInput = {
+      title: '',
+      requiredSkillIds: [],
+      subtasks: [],
+    };
+    setSubtasks([...subtasks, newSubtask]);
+  };
+
+  const handleUpdateSubtask = (index: number, updatedSubtask: SubtaskInput) => {
+    const updated = [...subtasks];
+    updated[index] = updatedSubtask;
+    setSubtasks(updated);
+  };
+
+  const handleRemoveSubtask = (index: number) => {
+    setSubtasks(subtasks.filter((_, i) => i !== index));
+  };
+
+  const validateSubtasks = (subtaskList: SubtaskInput[]): string | null => {
+    for (const subtask of subtaskList) {
+      if (!subtask.title.trim()) {
+        return 'All subtasks must have a title';
+      }
+      if (subtask.requiredSkillIds.length === 0) {
+        return 'All subtasks must have at least one required skill';
+      }
+      if (subtask.subtasks && subtask.subtasks.length > 0) {
+        const nestedError = validateSubtasks(subtask.subtasks);
+        if (nestedError) return nestedError;
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -55,14 +92,26 @@ const CreateTask: React.FC<CreateTaskProps> = ({ onTaskCreated, onCancel }) => {
       return;
     }
 
+    // Validate subtasks
+    if (subtasks.length > 0) {
+      const subtaskError = validateSubtasks(subtasks);
+      if (subtaskError) {
+        setError(subtaskError);
+        return;
+      }
+    }
+
     try {
       setSubmitting(true);
       setError(null);
       
-      await api.createTask({
+      const taskData: CreateTaskInput = {
         title: title.trim(),
         requiredSkillIds: selectedSkills,
-      });
+        subtasks: subtasks.length > 0 ? subtasks : undefined,
+      };
+
+      await api.createTask(taskData);
       
       setSuccess(true);
       
@@ -187,6 +236,50 @@ const CreateTask: React.FC<CreateTaskProps> = ({ onTaskCreated, onCancel }) => {
                   </div>
                   <small className="form-text text-muted">
                     Select the skills required to complete this task
+                  </small>
+                </div>
+
+                {/* Subtasks Section */}
+                <div className="mb-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <label className="form-label fw-bold mb-0">
+                      <i className="bi bi-diagram-3 me-2"></i>
+                      Subtasks
+                    </label>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={handleAddSubtask}
+                      disabled={submitting || success}
+                    >
+                      <i className="bi bi-plus-circle me-1"></i>
+                      Add Subtask
+                    </button>
+                  </div>
+
+                  {subtasks.length === 0 ? (
+                    <div className="alert alert-light border" role="alert">
+                      <i className="bi bi-info-circle me-2"></i>
+                      No subtasks added yet. Click "Add Subtask" to create nested tasks.
+                    </div>
+                  ) : (
+                    <div className="subtasks-container">
+                      {subtasks.map((subtask, index) => (
+                        <SubtaskForm
+                          key={index}
+                          subtask={subtask}
+                          skills={skills}
+                          level={1}
+                          onUpdate={(updated) => handleUpdateSubtask(index, updated)}
+                          onRemove={() => handleRemoveSubtask(index)}
+                          disabled={submitting || success}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  <small className="form-text text-muted">
+                    Add subtasks to break down complex tasks. Subtasks can have their own skills and nested subtasks (up to 3 levels).
                   </small>
                 </div>
 

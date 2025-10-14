@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, Property, ManyToOne, ManyToMany, Collection, Enum } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, ManyToOne, ManyToMany, Collection, Enum, OneToMany } from '@mikro-orm/core';
 import { Developer } from '../../developers/entities/developer.entity';
 import { Skill } from '../../skills/entities/skill.entity';
 
@@ -35,4 +35,11 @@ export class Task {
     inverseJoinColumn: 'skill_id',
   })
   requiredSkills = new Collection<Skill>(this);
+
+  // Self-referential relationship for subtasks
+  @ManyToOne(() => Task, { nullable: true, fieldName: 'parent_task_id' })
+  parentTask?: Task;
+
+  @OneToMany(() => Task, (task) => task.parentTask)
+  subtasks = new Collection<Task>(this);
 }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { CreateTaskInput } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -15,7 +16,7 @@ export const api = {
     return response.data;
   },
 
-  async createTask(data: { title: string; requiredSkillIds: number[] }) {
+  async createTask(data: CreateTaskInput) {
     try {
       const response = await axiosInstance.post('/tasks', data);
       return response.data;

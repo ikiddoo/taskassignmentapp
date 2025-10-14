@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository, EntityManager } from '@mikro-orm/core';
-import { CreateTaskDto } from './dto/create-task.dto';
+import { CreateTaskDto, CreateSubtaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { Task, TaskStatus } from './entities/task.entity';
 import { DevelopersService } from '../developers/developers.service';
@@ -18,37 +18,56 @@ export class TasksService {
   ) {}
 
   /**
-   * Creates a new task with required skills
+   * Creates a new task with required skills and optional subtasks
    * @param createTaskDto - Task creation data
    * @returns Promise<Task> The newly created task
    * @throws BadRequestException if skills don't exist or developer doesn't have required skills
    */
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
+    const task = await this.createTaskRecursive(createTaskDto, null);
+    await this.em.persistAndFlush(task);
+    return this.findOne(task.id);
+  }
+
+  /**
+   * Recursive helper to create task and its subtasks
+   */
+  private async createTaskRecursive(
+    taskDto: CreateTaskDto | CreateSubtaskDto,
+    parentTask: Task | null,
+  ): Promise<Task> {
     const skills = await Promise.all(
-      createTaskDto.requiredSkillIds.map((id) => this.skillsService.findOne(id)),
+      taskDto.requiredSkillIds.map((id) => this.skillsService.findOne(id)),
     );
 
     const task = this.taskRepository.create({
-      title: createTaskDto.title,
-      status: createTaskDto.status || TaskStatus.TODO,
+      title: taskDto.title,
+      status: taskDto.status || TaskStatus.TODO,
       createdAt: new Date(),
       updatedAt: new Date(),
+      parentTask: parentTask || undefined,
     });
 
     skills.forEach((skill) => task.requiredSkills.add(skill));
 
-    if (createTaskDto.assignedDeveloperId) {
+    if (taskDto.assignedDeveloperId) {
       const developer = await this.developersService.findOne(
-        createTaskDto.assignedDeveloperId,
+        taskDto.assignedDeveloperId,
       );
       
-      await this.validateDeveloperSkills(developer.id, createTaskDto.requiredSkillIds);
+      await this.validateDeveloperSkills(developer.id, taskDto.requiredSkillIds);
       task.assignedDeveloper = developer;
     }
 
-    await this.em.persistAndFlush(task);
-    
-    return this.findOne(task.id);
+    // Create subtasks recursively
+    if (taskDto.subtasks && taskDto.subtasks.length > 0) {
+      for (const subtaskDto of taskDto.subtasks) {
+        const subtask = await this.createTaskRecursive(subtaskDto, task);
+        task.subtasks.add(subtask);
+      }
+    }
+
+    return task;
   }
 
   /**
@@ -56,14 +75,25 @@ export class TasksService {
    * @returns Promise<Task[]> Array of all tasks with populated relationships
    */
   async findAll(): Promise<Task[]> {
-    return this.taskRepository.findAll({
-      populate: ['requiredSkills', 'assignedDeveloper', 'assignedDeveloper.skills'],
-      orderBy: { createdAt: 'DESC' },
-    });
+    return this.taskRepository.find(
+      { parentTask: null }, // Only get top-level tasks
+      {
+        populate: [
+          'requiredSkills',
+          'assignedDeveloper',
+          'assignedDeveloper.skills',
+          'subtasks',
+          'subtasks.requiredSkills',
+          'subtasks.assignedDeveloper',
+          'subtasks.subtasks', // Support nested subtasks
+        ],
+        orderBy: { createdAt: 'DESC' },
+      },
+    );
   }
 
   /**
-   * Retrieves a single task by ID with all related data
+   * Retrieves a single task by ID with all related data including subtasks
    * @param id - The task's ID
    * @returns Promise<Task> The task with populated relationships
    * @throws NotFoundException if task is not found
@@ -72,7 +102,16 @@ export class TasksService {
     const task = await this.taskRepository.findOne(
       { id },
       {
-        populate: ['requiredSkills', 'assignedDeveloper', 'assignedDeveloper.skills'],
+        populate: [
+          'requiredSkills',
+          'assignedDeveloper',
+          'assignedDeveloper.skills',
+          'subtasks',
+          'subtasks.requiredSkills',
+          'subtasks.assignedDeveloper',
+          'subtasks.subtasks',
+          'parentTask',
+        ],
       },
     );
 
@@ -86,14 +125,20 @@ export class TasksService {
   /**
    * Updates a task's properties - update title, status, assigned developer, and required skills
    * Validates that assigned developer has all required skills
+   * Validates that task can only be marked as "Done" if all subtasks are "Done"
    * @param id - The task's ID
    * @param updateTaskDto - Task update data
    * @returns Promise<Task> The updated task
    * @throws NotFoundException if task or developer not found
-   * @throws BadRequestException if developer doesn't have required skills
+   * @throws BadRequestException if developer doesn't have required skills or subtasks aren't complete
    */
   async update(id: number, updateTaskDto: UpdateTaskDto): Promise<Task> {
     const task = await this.findOne(id);
+
+    // If trying to change status to "Done", validate all subtasks are done
+    if (updateTaskDto.status === TaskStatus.DONE && task.status !== TaskStatus.DONE) {
+      await this.validateAllSubtasksDone(task);
+    }
 
     if (updateTaskDto.title !== undefined) {
       task.title = updateTaskDto.title;
@@ -137,6 +182,46 @@ export class TasksService {
     await this.em.flush();
     
     return this.findOne(id);
+  }
+
+  /**
+   * Validates that all subtasks (recursively) are marked as "Done"
+   * @param task - The task to validate
+   * @throws BadRequestException if any subtask is not done
+   */
+  private async validateAllSubtasksDone(task: Task): Promise<void> {
+    const subtasks = task.subtasks.getItems();
+    
+    if (subtasks.length === 0) {
+      return; // No subtasks, validation passes
+    }
+
+    const incompleteSubtasks: string[] = [];
+
+    for (const subtask of subtasks) {
+      if (subtask.status !== TaskStatus.DONE) {
+        incompleteSubtasks.push(subtask.title);
+      }
+      
+      // Recursively check nested subtasks
+      const nestedSubtasks = subtask.subtasks.getItems();
+      if (nestedSubtasks.length > 0) {
+        try {
+          await this.validateAllSubtasksDone(subtask);
+        } catch (error) {
+          // If nested subtask validation fails, add to incomplete list
+          if (error instanceof BadRequestException) {
+            incompleteSubtasks.push(`${subtask.title} (has incomplete subtasks)`);
+          }
+        }
+      }
+    }
+
+    if (incompleteSubtasks.length > 0) {
+      throw new BadRequestException(
+        `Cannot mark task as "Done". The following subtask(s) must be completed first:\n- ${incompleteSubtasks.join('\n- ')}`,
+      );
+    }
   }
 
   /**
