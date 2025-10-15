@@ -29,6 +29,7 @@ const TaskRow: React.FC<TaskRowProps> = ({
   expandedTasks,
 }) => {
   const developerHasRequiredSkills = (developer: Developer, task: Task): boolean => {
+    if (!developer?.skills || !task?.requiredSkills) return false;
     const developerSkillIds = developer.skills.map(skill => skill.id);
     const requiredSkillIds = task.requiredSkills.map(skill => skill.id);
     return requiredSkillIds.every(skillId => developerSkillIds.includes(skillId));
@@ -92,11 +93,15 @@ const TaskRow: React.FC<TaskRowProps> = ({
         {/* Skills */}
         <td>
           <div className="d-flex flex-wrap gap-1">
-            {task.requiredSkills.map((skill) => (
-              <span key={skill.id} className="badge bg-info text-dark">
-                {skill.name}
-              </span>
-            ))}
+            {task.requiredSkills && task.requiredSkills.length > 0 ? (
+              task.requiredSkills.map((skill) => (
+                <span key={skill.id} className="badge bg-info text-dark">
+                  {skill.name}
+                </span>
+              ))
+            ) : (
+              <span className="text-muted">No skills</span>
+            )}
           </div>
         </td>
 
@@ -203,15 +208,18 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
     try {
       setLoading(true);
       setError(null);
+      console.log('Loading tasks and developers...');
       const [tasksData, developersData] = await Promise.all([
         api.getTasks(),
         api.getDevelopers(),
       ]);
-      setTasks(tasksData);
-      setDevelopers(developersData);
+      console.log('Tasks loaded:', tasksData);
+      console.log('Developers loaded:', developersData);
+      setTasks(tasksData || []);
+      setDevelopers(developersData || []);
     } catch (err) {
-      setError('Failed to load data. Please try again.');
       console.error('Error loading data:', err);
+      setError('Failed to load data. Please try again.');
     } finally {
       setLoading(false);
     }
