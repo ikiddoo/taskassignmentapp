@@ -45,6 +45,29 @@ A web application for managing developer task assignment.
 
 **PostgreSQL** is a powerful, open-source relational database chosen for the app.
 
+## Environment Configuration
+
+Before running the application, you need to configure environment variables for the backend service.
+
+### Setting up .env file
+
+Create a `.env` file in the `backend` directory with the following variables:
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5433
+DB_USERNAME=postgres
+DB_PASSWORD=<enter_password>
+DB_NAME=task_assignment
+
+# LLM Configuration
+GEMINI_API_KEY=<enter_key>
+```
+
+> **Note:** When running with Docker Compose, the environment variables are already defined in `docker-compose.yml` and will override the `.env` file. The `.env` file is primarily for local development outside of Docker.
+
+
 ## Docker Deployment
 
 This application uses Docker and Docker Compose to orchestrate multiple containers for easy deployment and development.
