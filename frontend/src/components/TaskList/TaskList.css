@@ -109,6 +109,38 @@
   margin-bottom: 1.5rem;
 }
 
+/* Subtask indicator styling */
+.task-row-level-1 .task-title {
+  font-size: 0.9rem;
+}
+
+.task-row-level-2 .task-title {
+  font-size: 0.85rem;
+}
+
+.task-row-level-3 .task-title {
+  font-size: 0.8rem;
+}
+
+/* Subtask completion warning */
+.text-warning {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+/* Border for nested tasks */
+.task-row-level-1 td:first-child {
+  border-left: 3px solid #dee2e6;
+}
+
+.task-row-level-2 td:first-child {
+  border-left: 3px solid #adb5bd;
+}
+
+.task-row-level-3 td:first-child {
+  border-left: 3px solid #6c757d;
+}
+
 @media (max-width: 768px) {
   .table-responsive {
     font-size: 0.875rem;

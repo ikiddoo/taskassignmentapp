@@ -38,11 +38,27 @@ const TaskRow: React.FC<TaskRowProps> = ({
     return developers.filter(dev => developerHasRequiredSkills(dev, task));
   };
 
+  const areAllSubtasksCompleted = (task: Task): boolean => {
+    if (!task.subtasks || task.subtasks.length === 0) {
+      return true;
+    }
+    return task.subtasks.every(subtask => 
+      subtask.status === 'Done' && areAllSubtasksCompleted(subtask)
+    );
+  };
+
+  // Check if task can be marked as done
+  const canMarkAsDone = (task: Task): boolean => {
+    return areAllSubtasksCompleted(task);
+  };
+
   const eligibleDevelopers = getEligibleDevelopers(task);
   const isUpdating = updatingTaskId === task.id;
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
   const isExpanded = expandedTasks.has(task.id);
   const indentStyle = { paddingLeft: `${level * 2}rem` };
+  const allSubtasksCompleted = areAllSubtasksCompleted(task);
+  const canBeDone = canMarkAsDone(task);
 
   return (
     <>
@@ -65,8 +81,8 @@ const TaskRow: React.FC<TaskRowProps> = ({
             <div className="task-title-wrapper">
               <div className="task-title">{task.title}</div>
               {hasSubtasks && (
-                <span className="badge bg-secondary ms-2">
-                  {task.subtasks!.length} subtask{task.subtasks!.length !== 1 ? 's' : ''}
+                <span className={`badge ms-2 ${allSubtasksCompleted ? 'bg-success' : 'bg-secondary'}`}>
+                  {task.subtasks!.filter(st => st.status === 'Done').length}/{task.subtasks!.length} subtask{task.subtasks!.length !== 1 ? 's' : ''}
                 </span>
               )}
             </div>
@@ -94,8 +110,19 @@ const TaskRow: React.FC<TaskRowProps> = ({
           >
             <option value="To-do">To-do</option>
             <option value="In Progress">In Progress</option>
-            <option value="Done">Done</option>
+            <option 
+              value="Done" 
+              disabled={!canBeDone}
+            >
+              Done
+            </option>
           </select>
+          {hasSubtasks && !allSubtasksCompleted && task.status !== 'Done' && (
+            <small className="text-warning d-block mt-1">
+              <i className="bi bi-exclamation-triangle-fill me-1"></i>
+              Complete all subtasks first
+            </small>
+          )}
         </td>
 
         {/* Assignee */}
@@ -155,6 +182,22 @@ const TaskList: React.FC<TaskListProps> = ({ onCreateTask }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // handle auto-expand tasks with subtasks
+  useEffect(() => {
+    const tasksWithSubtasks = new Set<number>();
+    const findTasksWithSubtasks = (taskList: Task[]) => {
+      taskList.forEach(task => {
+        if (task.subtasks && task.subtasks.length > 0) {
+          tasksWithSubtasks.add(task.id);
+          // Recursively check nested tasks
+          findTasksWithSubtasks(task.subtasks);
+        }
+      });
+    };
+    findTasksWithSubtasks(tasks);
+    setExpandedTasks(tasksWithSubtasks);
+  }, [tasks]);
 
   const loadData = async () => {
     try {
