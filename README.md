@@ -12,16 +12,10 @@ A web application for managing developer task assignment.
 **ORM - MikroORM** (`@mikro-orm/core`, `@mikro-orm/postgresql`)
 - Modern TypeScript ORM for Node.js based on Data Mapper pattern
 - Type-safe database queries with excellent TypeScript support
-- Automatic schema synchronization and migrations
-- Unit of Work pattern for efficient database operations
-- Support for complex relations and query building
 
 **AI Integration - Google Gemini** (`@google/genai`)
 - Google's advanced generative AI model integration
-- Powers intelligent task assignment based on developer skills
-- Analyzes task requirements and developer profiles
 - Provides smart recommendations for optimal task allocation
-- Enables natural language processing for task descriptions
 
 **Other Key Packages:**
 - `@nestjs/config`: Environment configuration management
@@ -37,14 +31,9 @@ A web application for managing developer task assignment.
 **UI Framework - Bootstrap** (`bootstrap`)
 - Popular CSS framework for responsive design
 - Pre-built components for rapid development
-- Consistent styling across the application
-- Mobile-first approach with responsive grid system
 
 **HTTP Client - Axios** (`axios`)
 - Promise-based HTTP client for API communication
-- Automatic JSON transformation
-- Request/response interceptors for centralized error handling
-- Better browser compatibility than fetch API
 - Easy configuration for base URLs and headers
 
 **Core Libraries:**
