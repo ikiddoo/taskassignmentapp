@@ -1,5 +1,60 @@
-# taskassignmentapp
+# TaskAssignmentapp
 A web application for managing developer task assignment.
+
+## Tech Stack
+
+### Backend - NestJS
+
+**NestJS** is a progressive Node.js framework (Built on top of Express) for building efficient and scalable server-side applications. It's chosen for this project due to several key advantages e..g., enables tyscript, modular architecture for building apis, dependency injection. 
+
+#### Key Dependencies:
+
+**ORM - MikroORM** (`@mikro-orm/core`, `@mikro-orm/postgresql`)
+- Modern TypeScript ORM for Node.js based on Data Mapper pattern
+- Type-safe database queries with excellent TypeScript support
+- Automatic schema synchronization and migrations
+- Unit of Work pattern for efficient database operations
+- Support for complex relations and query building
+
+**AI Integration - Google Gemini** (`@google/genai`)
+- Google's advanced generative AI model integration
+- Powers intelligent task assignment based on developer skills
+- Analyzes task requirements and developer profiles
+- Provides smart recommendations for optimal task allocation
+- Enables natural language processing for task descriptions
+
+**Other Key Packages:**
+- `@nestjs/config`: Environment configuration management
+- `class-validator` & `class-transformer`: DTO validation and transformation
+- `reflect-metadata`: Enables decorator functionality
+
+### Frontend - React with Vite
+
+**React** is a powerful JavaScript library for building user interfaces, while **Vite** is a modern build tool that provides an exceptional development experience e.g., component-based & typescript development, optimized builds and production ready.
+
+#### Key Dependencies:
+
+**UI Framework - Bootstrap** (`bootstrap`)
+- Popular CSS framework for responsive design
+- Pre-built components for rapid development
+- Consistent styling across the application
+- Mobile-first approach with responsive grid system
+
+**HTTP Client - Axios** (`axios`)
+- Promise-based HTTP client for API communication
+- Automatic JSON transformation
+- Request/response interceptors for centralized error handling
+- Better browser compatibility than fetch API
+- Easy configuration for base URLs and headers
+
+**Core Libraries:**
+- `react` & `react-dom`: Core React library for building UI components
+- `typescript`: Static type checking for safer code
+- `vite`: Next-generation frontend build tool
+
+### Database - PostgreSQL 15
+
+**PostgreSQL** is a powerful, open-source relational database chosen for the app.
 
 ## Docker Deployment
 
