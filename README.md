@@ -149,3 +149,142 @@ Once all containers are running:
 - **Frontend**: http://localhost
 - **Backend API**: http://localhost:3000
 - **Database**: localhost:5433 (PostgreSQL)
+
+## API Documentation
+
+The backend provides RESTful API endpoints for managing skills, developers, and tasks. All endpoints return JSON responses.
+
+### Skill API
+
+**Get All Skills**
+```http
+GET http://localhost:3000/skills
+```
+Returns a list of all available skills in the system.
+
+**Get Skill by ID**
+```http
+GET http://localhost:3000/skills/1
+```
+Returns details of a specific skill by ID.
+
+---
+
+### Developer API
+
+**Get All Developers**
+```http
+GET http://localhost:3000/developers
+```
+Returns a list of all developers with their assigned skills.
+
+**Get Developer by ID**
+```http
+GET http://localhost:3000/developers/3
+```
+Returns details of a specific developer including their skills and assigned tasks.
+
+---
+
+### Task API
+
+#### Create Task
+
+**Create Task with AI (Recommended)**
+```http
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "As a resident, I want to be able to pay for my product bookings."
+}
+```
+Creates a new task and uses Google Gemini AI to automatically analyze the task description and identify required skills. The AI will suggest the most suitable developer based on skill matching.
+
+**Create Task Manually**
+```http
+POST http://localhost:3000/tasks
+Content-Type: application/json
+
+{
+  "title": "Implement search feature",
+  "requiredSkillIds": [2]
+}
+```
+Creates a new task where you manually specify the required skills. Use this when you want direct control over skill requirements without AI assistance.
+
+#### Update Task
+
+**Assign Task to Developer**
+```http
+PATCH http://localhost:3000/tasks/1
+Content-Type: application/json
+
+{
+  "assignedDeveloperId": 1
+}
+```
+Assigns the task to a specific developer. The system validates that the developer has the required skills for the task.
+
+**Change Task Status**
+```http
+PATCH http://localhost:3000/tasks/1
+Content-Type: application/json
+
+{
+  "status": "In Progress"
+}
+```
+Updates the task status. Available statuses: `Pending`, `In Progress`, `Completed`, `Blocked`.
+
+**Add/Update Required Skills**
+```http
+PATCH http://localhost:3000/tasks/1
+Content-Type: application/json
+
+{
+  "requiredSkillIds": [1, 2]
+}
+```
+Updates the required skills for a task. Note: The system validates skill compatibility. For example, trying to add a frontend skill to a backend-focused task may fail validation to maintain task consistency.
+
+#### Get Task
+
+**Get Task Details**
+```http
+GET http://localhost:3000/tasks/1
+```
+Returns complete task information including:
+- Task title and description
+- Current status
+- Required skills
+- Assigned developer (if any)
+- Creation and update timestamps
+
+---
+
+### Response Examples
+
+**Success Response (200 OK)**
+```json
+{
+  "id": 1,
+  "title": "Implement search feature",
+  "status": "Pending",
+  "requiredSkills": [
+    { "id": 2, "name": "Backend Development" }
+  ],
+  "assignedDeveloper": null,
+  "createdAt": "2025-10-15T10:30:00Z",
+  "updatedAt": "2025-10-15T10:30:00Z"
+}
+```
+
+**Error Response (400 Bad Request)**
+```json
+{
+  "statusCode": 400,
+  "message": "Skill mismatch: Cannot add frontend skills to backend-focused task",
+  "error": "Bad Request"
+}
+```
